@@ -71,7 +71,7 @@ console.log(sum)
 
 
 
-### 函数是一等公民
+## 函数是一等公民
 
 [MDN First-class Function](https://developer.mozilla.org/zh-CN/docs/Glossary/First-class_Function)
 
@@ -112,7 +112,7 @@ console.log(sum)
 
 
 
-### 高阶函数
+## 高阶函数
 
 #### 什么是高阶函数
 
@@ -204,7 +204,7 @@ let r = filter(array, item => item % 2)
 
 #### 常用的高阶函数
 
-常用告诫函数
+常用高阶函数
 
 + forEach
 + map
@@ -268,7 +268,7 @@ console.log(result)
 
 
 
-### 闭包
+## 闭包
 
 #### 概念
 
@@ -279,4 +279,205 @@ console.log(result)
 
 
 #### 案例
+
+
+
+## 纯函数
+
+### 概念
+
++ **纯函数：相同的输入永远会得到相同的输出**，而且没有任何可观察的副作用
+
+  + 纯函数就类似于数学中的函数（用来描述输入和输出之间的关系），y = f(x)
+
++ [lodash](https://www.lodashjs.com/) 是一个纯函数的功能库，提供了对数组、数字、对象、字符串、函数等操作的一些方法
+
++ 数组的 `slice` 和 `splice` 分别是 纯函数 和 不纯的函数
+
+  + `slice` 返回数组中的指定部分，不会改变原数组
+  + `splice` 对数组进行操作返回该数组，会改变原数组
+
+  ```js
+  let array = [1, 2, 3, 4, 5]
+  
+  // 纯函数
+  console.log(array.slice(0, 3))
+  // => [ 1, 2, 3 ]
+  console.log(array.slice(0, 3))
+  // => [ 1, 2, 3 ]
+  console.log(array.slice(0, 3))
+  // => [ 1, 2, 3 ]
+  
+  // 不纯的函数
+  console.log(array.splice(0, 3))
+  // => [ 1, 2, 3 ]
+  console.log(array.splice(0, 3))
+  // => [ 4, 5 ]
+  console.log(array.splice(0, 3))
+  // => []
+  ```
+
++ 函数式编程不会保留计算中间的结果，所以变量是不可变的（无状态的）
+
++ 我们可以把一个函数的执行结果交给另一个函数去处理
+
+
+
+### Lodash
+
+> 纯函数的代表
+
+
+
+### 纯函数的优势
+
++ 可缓存
+
+  + 因为纯函数对相同输入始终有相同的结果，所以可以把纯函数的结果缓存起来
+
+    ```js
+    const _ = require('lodash')
+    
+    function getArea(r) {
+      console.log(r)
+      return Math.PI * r * r
+    }
+    let getAreawithMemory = _.memoize(getArea)
+    console.log(getAreawithMemory(4))
+    console.log(getAreawithMemory(4))
+    console.log(getAreawithMemory(4))
+    ```
+
+  + 自己模拟一个 memoize 函数
+
+    ```js
+    function memoize(fn) {
+      let cache = {}
+      return function (...args) {
+        let key = JSON.stringify(args)
+        cache[key] = cache[key] || fn.apply(null, args)
+        return cache[key]
+      }
+    }
+    
+    let getAreawithMemory = memoize(getArea)
+    console.log(getAreawithMemory(4))
+    console.log(getAreawithMemory(4))
+    console.log(getAreawithMemory(4))
+    ```
+
++ 可测试
+
+  + 纯函数让测试更方便
+
++ 并行处理
+
+  + 在多线程环境下并行操作共享的内存数据很可能出现意外情况
+  + 纯函数不需要访问共享的内存数据，所以在并行环境下可以任意运行纯函数（Web Workder）
+
+
+
+### 副作用
+
+> 纯函数：相同的输入永远会得到相同的输出，而且没有任何可观察的 **副作用**
+
+```js
+// 不纯的
+let mini = 18
+function checkAge (age) {
+  return age >= mini
+}
+
+// 纯的（有硬编码，后续可以通过柯里化解决）
+function checkAge(age) {
+  let mini = 18
+  return age >= mini
+}
+```
+
+副作用让一个函数变得不纯，纯函数根据相同的输入返回相同的输出，如果函数依赖于外部的状态就无法保证输出相同，就会带来副作用
+
+副作用来源：
+
++ 配置文件
++ 数据库
++ 获取用户的输入
++ ......
+
+所有的外部交互都有可能带来副作用，副作用也使得方法通用性下降不适合扩展和课重用性，同时副作用会给程序中带来安全隐患给程序带来不确定性，但是副作用不可能完全禁止，尽可能控制它们在可控范围内发生。
+
+
+
+## 柯里化
+
+> Haskell Brooks Curry
+
++ 使用柯里化解决上一个案例中硬编码的问题
+
+  ```js
+  function checkAge(age) {
+    let min = 18
+    return age >= mini
+  }
+  
+  // 普通纯函数
+  function checkAge(min, age) {
+    return age >= min
+  }
+  
+  // 柯里化
+  function checkAge(min) {
+    return function (age) {
+      return age >= min
+    }
+  }
+  
+  // es6 简写
+  const checkAge = min => age => age >= min
+  
+  let checkAge18 = checkAge(18)
+  let checkAge20 = checkAge(20)
+  
+  console.log(checkAge18(20))
+  console.log(checkAge18(24))
+  console.log(checkAge20(24))
+  ```
+
++ **柯里化(Currying)**
+
+  + 当一个函数有多个参数的时候先传递一部分参数调用它（这部分参数以后永远不变）
+  + 然后返回一个新的函数接受剩余的参数，返回结果
+
+
+
+### Lodash 中的柯里化
+
++ `_.curry(func)`
+
+  + 功能：创建一个函数，该函数接受一个或多个 `func` 参数，如果 `func` 所需要的参数都被提供则执行 `func` 并返回执行的结果，否则继续返回该函数并等待接受剩余的参数
+  + 参数：需要柯里化的函数
+  + 返回值：柯里化后的函数
+
+  ```js
+  const { curry } = require('lodash')
+  
+  function getSum(a, b, c) {
+    return a + b + c
+  }
+  
+  const curried = curry(getSum)
+  
+  console.log(curried(1, 2, 3))
+  console.log(curried(1, 2)(3))
+  console.log(curried(1)(2)(3))
+  ```
+
+
+
+### 总结
+
++ 柯里化可以让我们给一个函数传递较少的参数得到一个已经记住了某些固定参数的新函数
++ 这是一种对函数参数的 *缓存*
++ 让函数变得更灵活、颗粒度更小
++ 可以把多元函数转换成一元函数，可以组合使用函数产生强大的功能
 
