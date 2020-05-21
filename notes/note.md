@@ -471,13 +471,98 @@ function checkAge(age) {
   console.log(curried(1, 2)(3))
   console.log(curried(1)(2)(3))
   ```
-
-
+  
+  ```js
+  // 模拟实现 curry
+  function curry(func) {
+    return function curriedFn(...args) {
+      // 判断实参和形参的个数
+      if (args.length < func.length) {
+        return function (...rest) {
+          return curriedFn(...args.concat(rest))
+        }
+      }
+      return func(...args)
+    }
+  }
+  ```
+  
+  
 
 ### 总结
 
 + 柯里化可以让我们给一个函数传递较少的参数得到一个已经记住了某些固定参数的新函数
-+ 这是一种对函数参数的 *缓存*
++ 这是一种对函数参数的 **缓存**
 + 让函数变得更灵活、颗粒度更小
 + 可以把多元函数转换成一元函数，可以组合使用函数产生强大的功能
 
+
+
+## 函数组合
+
+> 函数组合 Compose
+
++ 纯函数和柯里化很容易写出洋葱代码 `h(g(f(x)))`
+  + 获取数组最后一个元素在转换成大写字母，`_toUpper(_.first(_.reverse(array)))`
+  + 函数组合可以让我们把细粒度的函数重新组合生成一个新的函数
+
+
+
+### 管道
+
+下面这张图表示程序中使用函数处理数据的过程，给 fn 函数输入参数 a，返回结果 b，可以想象成 a 数据通过一个管道得到一个 b 数据
+
+![grdk01](https://tva1.sinaimg.cn/large/007S8ZIlgy1gezt4aaakjj310004cjs1.jpg)
+
+当 fn 函数比较复杂的时候，我们可以把函数 fn 拆分成多个小函数，此时多个中间运算过程产生的 m 和 n
+
+下面这张图中可以想象成把 fn 这个管道拆分成了 3 个管道 f1，f2，f3，数据 a 通过管道 f3 得到结果 m，m 再通过管道 f2 得到结果 n，n 通过管道 f1 得到最终结果 b
+
+![grdk02](https://tva1.sinaimg.cn/large/007S8ZIlgy1gezt4v037wj310808iq4p.jpg)
+
+```js
+fn = compose(f1, f2, f3)
+b = fn(a)
+```
+
+
+
+### 函数组合
+
++ 函数组合（Compose）：如果一个函数要经过多个函数处理才能得到最终值，这个时候可以把中间过程的函数合并成一个函数
+
+  + 函数就像数据的管道，函数组合就是把这些管道连接起来，让数据穿过多个管道形成最终结果
+  + **函数组合默认是从右到左执行**
+
++ Lodash 中的组合函数
+
+  + lodash 中组合函数 `flow()` 或者 `flowRight()`，它们都可以组合多个函数
+  + `flow()` 是从左到右运行
+  + **`flowRight()`** 是从右到左运行，使用的更多一些 
+
++ 模拟实现
+
+  ```js
+  const compose = (...funcs) => {
+    return function (value) {
+      return funcs.reverse().reduce((left, right) => {
+        return right(left)
+      }, value)
+    }
+  }
+  const compose = (...funcs) => value =>
+    funcs.reverse().reduce((acc, fn) => fn(acc), value)
+  ```
+
++ 函数的组合要满足 **组合律** (associativity)
+
+  + 我们既可以把 g 和 h 组合，还可以把 f 和 g 组合，结果都是一样的
+
+  ```js
+  // 组合律
+  let f = compose(f, g, h)
+  let associative = compose(compose(f, g), h) == compose(f, compose(g, h))
+  // true
+  ```
+
+  
