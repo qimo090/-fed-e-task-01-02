@@ -19,7 +19,7 @@
 
 ## 为什么要学习函数式编程
 
-**函数式编程** 是非常古老的一个概念，早于第一台计算机的诞生，[函数式编程的历史]()
+**函数式编程** 是非常古老的一个概念，早于第一台计算机的诞生，[函数式编程的历史](https://en.wikipedia.org/wiki/Functional_programming)
 
 那我们为什么现在还要学函数式编程？
 
@@ -566,3 +566,314 @@ b = fn(a)
   ```
 
   
+
+
+
+## Point Free
+
+> 我们可以把数据处理的过程定义成与数据无关的合成运算，不需要用到代表数据的那个参数，只要把简单的运算步骤合成到一起，在使用这种模式之前我们需要定义一些辅助的基本运算函数
+
++ 不需要指明处理的数据
++ **只需要合成运算过程**
++ 需要定义一些辅助的基本运算函数
+
+```js
+const f = fp.flowRight(fp.join('-'), fp.map(_.toLower), fp.split(' '))
+```
+
++ 案例演示
+
+```js
+// 非 Point Free 模式
+// Hello World => hello_world
+function f(word) {
+  return word.toLowerCase().replace(/\s+/g, '_')
+}
+
+// Point Free 模式
+const fp = require('lodash/fp')
+const f = fp.flowRight(fp.replace(/\s+/g, '_'), fp.toLower)
+
+console.log(f('Hello World'))
+```
+
+
+
+## Functor(函子)
+
+### 为什么学函子
+
+到目前为止已经学习了函数式编程的一些基础，但是我们还没有演示函数式编程中如何把副作用控制在可控的范围内、异常处理、异步操作
+
+### 什么是 Functor
+
++ 容器：包含值和值的变形关系（这个变形关系就是函数）
++ 函子：是一个特殊的容器，通过一个普通的对象来实现，该对象具有 map 方法，map 方法可以运行一个函数对值进行处理（变形关系）
++ 总结
+  + 函数式编程的运算不直接操作值，而是由函子完成
+  + 函子就是一个实现了 map 契约的对象
+  + 我们可以把函子想象成一个盒子，这个盒子里封装了一个值
+  + 想要处理盒子中的值，我们需要给盒子的 map 方法传递 一个处理值的函数（纯函数），由这个函数来对值进行处理
+  + 最终 map 方法返回一个包含新值的盒子（函子）
+
+
+
+### MayBe 函子
+
++ 我们在编程的过程中可能会遇到很多错误，需要对这些错误做相应的处理
++ Maybe 函子的作用就是可以对外部的空值情况作处理（控制副作用在允许的范围）
+
+```js
+class MayBe {
+  static of(value) {
+    return new MayBe(value)
+  }
+  constructor(value) {
+    this._value = value
+  }
+  // 如果对空值变形的话直接返回值为 null 的函子
+  map(fn) {
+    return this.isNothing() ? MayBe.of(null) : MayBe.of(fn(this._value))
+  }
+  isNothing() {
+    return this._value === null || this._value === undefined
+  }
+}
+
+let r = MayBe.of('hello world').map(x => x.toUpperCase())
+console.log(r)
+// => MayBe { _value: 'HELLO WORLD' }
+let res = MayBe.of(null).map(x => x.toUpperCase())
+console.log(res)
+// => MayBe { _value: null }
+```
+
++ MayBe 函子的问题
+
+  ```js
+  let r = MayBe.of('hello world')
+  	.map(x => x.toUpperCase())
+  	.map(x => null)
+  	.map(x => x.split(' '))
+  console.log(r)
+  // => MayBe { _value: null }
+  ```
+
+  执行过程没抛出异常，但是通过结果不能判断 null 的出现位置
+
+
+
+### Either 函子
+
++ Either 两者中的任何一个，类似与 `if...else...` 的处理
++ 异常会让函数变得不纯，Either 函子可以用来做异常处理
+
+```js
+class Left {
+  constructor(value) {
+    this._value = value
+  }
+  static of(value) {
+    return new Left(value)
+  }
+  map() {
+    return this
+  }
+}
+
+class Right {
+  constructor(value) {
+    this._value = value
+  }
+  static of(value) {
+    return new Right(value)
+  }
+  map(fn) {
+    return new Right(fn(this._value))
+  }
+}
+
+// let r = Right.of(123).map(x => x + 2)
+// console.log(r)
+
+function add(str) {
+  try {
+    return Right.of(JSON.parse(str))
+  } catch (error) {
+    return Left.of({ error: error.message })
+  }
+}
+
+let r1 = add('{"a": "a", "b": "b"}')
+console.log(r1)
+// => Right { _value: { a: 'a', b: 'b' } }
+let r2 = add({a: 'a', b: 'b'})
+console.log(r2)
+// => Left { _value: { error: "Unexpected token ' in JSON at position 2" } }
+```
+
+
+
+### IO 函子
+
++ IO 函子中的 `_value` 是一个函数，这里是把函数作为值来处理
++ IO 函子可以把不纯的动作存储到 `_value` 中，延迟执行这个不纯的操作（惰性执行），包装当前的操作
++ 把不纯的错做交给调用者来处理
+
+```js
+const fp = require('lodash/fp')
+
+class IO {
+  constructor(fn) {
+    this._value = fn
+  }
+  static of(value) {
+    return new IO(function () {
+      return value
+    })
+  }
+  map(fn) {
+    return new IO(fp.flowRight(fn, this._value))
+  }
+}
+
+// 调用
+let r = IO.of(process).map(p => p.execPath)
+// console.log(r)
+console.log(r._value())
+```
+
+
+
+### Task 异步执行
+
++ 异步任务的实现过于复杂，我们使用 Folktale 中的 `Task` 来演示
++ [folktale](https://github.com/origamitower/folktale) 一个标准的函数式编程库
+  + 和 lodash、ramda 不同的是，它没有提供很多功能函数
+  + 只提供了一些函数式处理的操作，例如：compose、curry 等，一些函子 Task、Either、MayBe 等
+
+```js
+const { compose, curry } = require('folktale/core/lambda')
+const { toUpper, first } = require('lodash/fp')
+
+// let f = curry(2, (x, y) => {
+//   return x + y
+// })
+
+// console.log(f(1, 2))
+// console.log(f(1)(2))
+
+let f = compose(toUpper, first)
+console.log(f(['one', 'two']))
+```
+
++ Task 异步执行
+  + folktale(2.3.2) 2.x 中的 Task 和 1.0 中的 Task 区别很大，1.0 中的用法更接近我们现在演示的函子
+  + 这里以 2.3.2 来演示
+
+```js
+const fs = require('fs')
+const { task } = require('folktale/concurrency/task')
+const { split, find } = require('lodash/fp')
+
+// 读取文件
+function readFile(filename) {
+  return task(resolver => {
+    fs.readFile(filename, 'utf-8', (err, data) => {
+      if (err) resolver.reject(err)
+      resolver.resolve(data)
+    })
+  })
+}
+
+readFile('package.json')
+  .map(split('\n'))
+  .map(find(x => x.includes('version')))
+  .run()
+  .listen({
+    onRejected: err => {
+      console.log(err)
+    },
+    onResolved: data => {
+      console.log(data)
+    },
+  })
+// => "version": "1.0.0",
+```
+
+
+
+### Pointed 函子
+
++ Pointed 函子是实现了 of 静态方法的函子
++ of 方法是为了避免使用 new 来创建对象，更深层的含义是 of 方法用来把值放到上下文 Context （把值放到容器中，使用 map 来处理值）
+
+```js
+class Container {
+  static of (value) {
+    return new Container(value)
+  }
+  // ...
+}
+
+Container.of(2)
+	.map(x => x + 6)
+```
+
+
+
+### Monad 函子
+
++ Monad 函子是可以变扁的 Pointed 函子，IO(IO(x))
++ 一个函子如果具有 join 和 of 两个方法并遵守一些定律就是一个 Monad
+
+```js
+// IO Monad
+const fs = require('fs')
+const fp = require('lodash/fp')
+
+class IO {
+  constructor(fn) {
+    this._value = fn
+  }
+  static of(value) {
+    return new IO(function () {
+      return value
+    })
+  }
+  map(fn) {
+    return new IO(fp.flowRight(fn, this._value))
+  }
+  join() {
+    return this._value()
+  }
+
+  flatMap(fn) {
+    return this.map(fn).join()
+  }
+}
+
+let readFile = function (filename) {
+  return new IO(function () {
+    return fs.readFileSync(filename, 'utf-8')
+  })
+}
+
+let print = function (x) {
+  return new IO(function () {
+    console.log(x)
+    return x
+  })
+}
+
+let r = readFile('package.json')
+  // .map(x => x.toUpperCase())
+  .map(fp.toUpper)
+  .flatMap(print)
+  .join()
+
+console.log(r)
+```
+
+
+
