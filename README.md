@@ -116,9 +116,21 @@ let isLastInStock = function (cars) {
 }
 ```
 
+**答**
+
+```js
+fp.flowRight(fp.prop('in_stock'), fp.last)
+```
+
 ### 练习 2
 
 使用 `fp.flowRight()` 、`fp.prop()` 和 `fp.first()` 获取第一个 car 的 name
+
+**答**
+
+```js
+fp.flowRight(fp.prop('name'), fp.first)
+```
 
 ### 练习 3
 
@@ -137,6 +149,12 @@ let averageDollarValue = function (cars) {
 }
 ```
 
+**答**
+
+```js
+fp.flowRight(_average, fp.map(fp.prop('dollar_value')))
+```
+
 ### 练习 4
 
 使用 `flowRight` 写一个 `sanitizeNames` 函数，返回一个下划线连接的小写字符串，把数组中的 `name` 转为这种形式：例如：`sanitizeNames(['Hello World']) => ['hello_world']`
@@ -144,6 +162,14 @@ let averageDollarValue = function (cars) {
 ```js
 let _underscore = fp.replace(/\W+/g, '_')
 // === 以上代码无需改动，并在 sanitizeNames 中使用它 ===
+```
+
+**答**
+
+```js
+function sanitizeNames(names) {
+  return fp.map(fp.flowRight(_underscore, fp.toLower), names)
+}
 ```
 
 ## 代码题 2
