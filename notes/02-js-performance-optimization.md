@@ -367,14 +367,86 @@ Performance 的使用
 + 任务管理器监控内存变化
 + 堆快照查找分离 DOM
 
-
-
 ## 代码优化
 
-前提
+### 如何精准测试 JavaScript 性能
 
-+ JavaScript 中的内存管理自动完成
-+ 执行引擎会使用不同的 GC 算法
-+ 算法工作的目的是为了实现内存空间良性循环
-+ Performance 工具监测内存变化
-+ JavaScript 是单线程机制的解释型语言
++ 本质上就是采集大量的执行样本进行数学统计和分析
++ 使用基于 Benchmark.js 的 https://jsperf.com/ 完成
+
+### Jsperf 使用流程
+
++ 使用 GitHub 账号登录
++ 填写个人信息（非必须）
++ 填写详细的测试用例信息（title、slug）
++ 填写准备代码（DOM操作时经常使用）
++ 填写必要 setup 与 teardown 代码
++ 填写测试代码片段
+
+### 慎用全局变量
+
+原因
+
++ 全局变量定义在全局执行上下文，是所有作用域链的顶端
++ 全局执行上下文一直存在于上下文执行栈，直到程序退出
++ 如果某个局部作用域出现了同名变量则会遮蔽或污染全局
+
+![WX20200528-090636@2x](https://tva1.sinaimg.cn/large/007S8ZIlgy1gf7w5fsa4qj31jg0pwgoy.jpg)
+
+### 缓存全局变量
+
+将使用中无法避免的全局变量缓存到局部
+
+![WX20200528-092428@2x](https://tva1.sinaimg.cn/large/007S8ZIlgy1gf7wlxydgwj31hn0u0agf.jpg)
+
+### 通过原型新增方法
+
+在原型对象上新增实例对象需要的方法
+
+![WX20200528-092944@2x](https://tva1.sinaimg.cn/large/007S8ZIlgy1gf7wrc1xkgj31io0qugpl.jpg)
+
+### 避开闭包陷阱
+
+关于闭包
+
++ 闭包是一种强大的语法
++ 闭包使用不当很容易出现内存泄露
++ 不要为了闭包而闭包
+
+![WX20200528-093429@2x](https://tva1.sinaimg.cn/large/007S8ZIlgy1gf7wwd12ldj31j00lsad0.jpg)
+
+### 避免属性访问方法使用
+
+JavaScript 中的面向对象
+
++ JS 不需属性的访问方法，所有属性都是外部可见的
++ 使用属性访问方法只会增加一层重定义，没有访问的控制力
+
+![WX20200528-093933@2x](https://tva1.sinaimg.cn/large/007S8ZIlgy1gf7x1j9tvlj318m0u0tdy.jpg)
+
+
+
+### For 循环优化
+
+![WX20200528-094432@2x](https://tva1.sinaimg.cn/large/007S8ZIlgy1gf7x6r7uqtj31jo0tcae9.jpg)
+
+
+
+### 采用最优循环方式
+
+![WX20200528-094930@2x](https://tva1.sinaimg.cn/large/007S8ZIlgy1gf7xbsnwofj31ap0u043l.jpg)
+
+### 节点添加优化
+
+节点的添加操作必然会有回流和重绘
+
+![WX20200528-095609@2x](https://tva1.sinaimg.cn/large/007S8ZIlgy1gf7xiqid5fj31j20s8tdi.jpg)
+
+### 克隆优化节点操作
+
+![WX20200528-101124@2x](https://tva1.sinaimg.cn/large/007S8ZIlgy1gf7xyotundj31i60pigpr.jpg)
+
+### 直接量替换 Object 操作
+
+![image-20200528102942478](https://tva1.sinaimg.cn/large/007S8ZIlgy1gf7yhjxqtyj31i20l0gol.jpg)
+
