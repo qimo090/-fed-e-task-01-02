@@ -57,6 +57,8 @@
 
 ## 代码题 1
 
+> code/app.js
+
 基于以下代码，完成下面的四个练习
 
 ```js
@@ -174,6 +176,8 @@ function sanitizeNames(names) {
 
 ## 代码题 2
 
+> code/app2.js
+
 基于以下代码，完成下面的四个练习
 
 ```js
@@ -223,6 +227,12 @@ let maybe = Maybe.of([5, 6, 1])
 // let ex1 =  // ... 实现代码
 ```
 
+**答**
+
+```js
+let ex1 = maybe.map(fp.map(fp.add(1)))
+```
+
 ### 练习 2
 
 实现一个函数 `ex2` ，能够使用 `fp.first` 获取列表的第一个元素
@@ -233,6 +243,12 @@ const { Maybe, Container } = require('./support')
 
 let xs = Container.of(['do', 'ray', 'me', 'fa', 'so', 'la', 'ti', 'do'])
 // let ex2 = //... 实现代码
+```
+
+**答**
+
+```js
+let ex2 = xs.map(fp.first)
 ```
 
 ### 练习 3
@@ -250,6 +266,12 @@ let user = { id: 2, name: 'Albert' }
 // let ex3 = //... 代码实现
 ```
 
+**答**
+
+```js
+let ex3 = user => safeProp('name', user).map(fp.first)
+```
+
 ### 练习 4
 
 使用 `Maybe` 重写 `ex4` ，不要有 `if` 语句
@@ -263,4 +285,10 @@ let ex4 = function (n) {
     return parseInt(n)
   }
 }
+```
+
+**答**
+
+```js
+let ex4 = n => Maybe.of(n).map(parseInt)
 ```

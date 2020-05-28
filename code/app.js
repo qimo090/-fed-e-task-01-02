@@ -79,6 +79,7 @@ let _average = function (xs) {
 //   return _average(dollar_values)
 // }
 // console.log('averageDollarValue', averageDollarValue(cars))
+// ==================================================
 const averageDollarValueFP = fp.flowRight(
   _average,
   fp.map(fp.prop('dollar_value'))
